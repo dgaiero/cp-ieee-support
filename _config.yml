@@ -4,7 +4,7 @@ remote_theme: CloudCannon/edition-jekyll-template
 # Site
 
 title: Edition Template
-url: "https://long-pig.cloudvent.net"
+url: "https://gitdocs.calpolyieee.com"
 baseurl:
 google_analytics_key:
 show_full_navigation: true
