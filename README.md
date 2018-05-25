@@ -1,8 +1,15 @@
-## Welcome to Cal Poly IEEE Github Documentation Support
+# CPIEEE Github Support
 
-ieee.calpoly.edu
-calpolyieee.com
-members.calpolyieee.com
-gitdocs.calpolyieee.com
+CPIEE Support Covers:
+
+* [ieee.calpoly.edu](http://ieee.calpoly.edu)
+* [calpolyieee.com](https://calpolyieee.com)
+* [members.calpolyieee.com](https://memberscalpolyieee.com)
+* [gitdocs.calpolyieee.com](https://gitsupport.calpolyieee.com)
 
 This site will provide all necesary documentation to setup various services.
+
+TOC:
+
+* [Home](/)
+* [SQL Docs](/gcp-docs/sql-docs/connect-sql)
