@@ -13,3 +13,4 @@ TOC:
 
 * [Home](/)
 * [SQL Docs](/gcp-docs/sql-docs/connect-sql)
+* [cpieee-ldap server setup](/server-setup/cpieee-ldap)
