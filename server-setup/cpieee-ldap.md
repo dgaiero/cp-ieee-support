@@ -23,16 +23,17 @@ In using this guide, there are several software and server configuration instruc
 ## Setting up server
 
 In Google Cloud Platform Console, visit the VM Instances section. Select `CREATE INSTANCE`. Under Instance Type, type the following:
-Identifier | Value
+
+Name|Description
 ---|---
-Name|cpieee-ldap
-Region|us-west1 (Oregon)|us-west1-a
-Machine Type|small (1 shared CPU)
-Boot Disk|Ubuntu 16.04 LTS
-Boot disk type|SSD persistent disk
-Size|10 GB
-Firewall|Allow both
-Networking > Network Tags|ldap,ldaps
+Name|`cpieee-ldap`
+Region|`us-west1 (Oregon)\|us-west1-a`
+Machine Type|`small (1 shared CPU)`
+Boot Disk|`Ubuntu 16.04 LTS`
+Boot disk type|`SSD persistent disk`
+Size|`10 GB`
+Firewall|`Allow both`
+Networking \> Network Tags|`ldap`,`ldaps`
 SSH Keys|Add your SSH key
 
 ### Configuring Network settings
@@ -45,25 +46,25 @@ Then, select `Firewall Rules`. Create two firewall rules:
 
 Name | Description
 ---|---
-Network|default
-Priority|1000
-Direction|Ingress
-Action on match|Allow
-Target tags|ldaps
-IP ranges|0.0.0.0/0
-Protocols and ports|tcp:689
+Network|`default`
+Priority|`1000`
+Direction|`Ingress`
+Action on match|`Allow`
+Target tags|`ldaps`
+IP ranges|`0.0.0.0/0`
+Protocols and ports|`tcp:689`
 
 #### Firewall Rule 2
 
 Name | Description
 ---|---
-Network|default
-Priority|1000
-Direction|Ingress
-Action on match|Allow
-Target tags|ldap
-IP ranges|0.0.0.0/0
-Protocols and ports|tcp:389
+Network|`default`
+Priority|`1000`
+Direction|`Ingress`
+Action on match|`Allow`
+Target tags|`ldap`
+IP ranges|`0.0.0.0/0`
+Protocols and ports|`tcp:389`
 
 ## Configuring sldap
 
