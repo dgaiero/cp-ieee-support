@@ -12,6 +12,9 @@ In this guide:
         * [Install and configure LDAP Server](#install-and-configure-ldap-server)
         * [Secure LDAP server](#secure-ldap-server)
             * [Copying the Let's Encrypt Certificates](#copying-the-lets-encrypt-certificates)
+            * [Updating the Certbot Renewal Cron Job](#updating-the-certbot-renewal-cron-job)
+            * [Configuring slapd to Offer Secure Connections](#configuring-slapd-to-offer-secure-connections)
+    * [Configuring custom IEEE Attributes and Object Classes](#configuring-custom-ieee-attributes-and-object-classes)
 
 ## Assumptions
 
@@ -139,7 +142,7 @@ Edit the `renew.sh` file:
 ```bash
 #!/bin/sh
 
-SITE=cp-ldap
+SITE=ldap.calpolyieee.com
 
 # move to the correct let's encrypt directory
 cd /etc/letsencrypt/live/$SITE
@@ -155,4 +158,176 @@ chmod 640 /etc/ssl/private/$SITE.privkey.pem
 
 # restart slapd to load new certificates
 systemctl restart slapd
+```
+
+Save and close the file, then make it executable:
+
+```bash
+> sudo chmod u+x /usr/local/bin/renew.sh
+```
+
+Then run the script with `sudo`:
+
+```bash
+> sudo /usr/local/bin/renew.sh
+```
+
+Verify that the script worked by listing out the new files in `/etc/ssl`:
+
+```bash
+> sudo su -c 'ls -al /etc/ssl/{certs,private}/ldap.calpolyieee.com*'
+```
+
+The `sudo` command above is a little different than normal. The `su -c '. . .'` portion wraps the whole `ls` command in a **root** shell before executing it. If we didn't do this, the `*` wildcard filename expansion would run with your non-sudo user's permissions, and it would fail because `/etc/ssl/private` is not readable by your user.
+
+ls will print details about the three files. Verify that the ownership and permissions look correct:
+
+```bash
+Output
+-rw-r--r-- 1 root root     1793 May 31 13:58 /etc/ssl/certs/ldap.calpolyieee.com.cert.pem
+-rw-r--r-- 1 root root     3440 May 31 13:58 /etc/ssl/certs/ldap.calpolyieee.com.fullchain.pem
+-rw-r----- 1 root ssl-cert 1704 May 31 13:58 /etc/ssl/private/ldap.calpolyieee.com.privkey.pem
+```
+
+Next we'll automate this with `certbot`.
+
+#### Updating the Certbot Renewal Cron Job
+
+We need to update our certbot cron job to run this script whenever the certificates are updated:
+
+```bash
+> sudo crontab -e
+```
+
+You should already have a `certbot renew` line. Add the highlighted portion below:
+
+```bash
+15 3 * * * /usr/bin/certbot renew --quiet --renew-hook /usr/local/bin/renew.sh
+```
+
+Save and close the crontab. Now, whenever `certbot` renews the certificates, our script will be run to copy the files, adjust permissions, and restart the `slapd` server.
+
+#### Configuring slapd to Offer Secure Connections
+
+We need to add the **openldap** user to the **ssl-cert** group so `slapd` can read the private key:
+
+```bash
+> sudo usermod -aG ssl-cert openldap
+```
+
+Restart slapd so it picks up the new group:
+
+```bash
+> sudo systemctl restart slapd
+```
+
+Finally, we need to configure `slapd` to actually use these certificates and keys. To do this we put all of our config changes in an *LDIF* file — which stands for LDAP data interchange format — and then load the changes into our LDAP server with the `ldapmodify` command.
+
+Open up a new LDIF file:
+
+```bash
+> cd ~
+> vim ssl.ldif
+```
+
+This will open a blank file. Paste the following into the file:
+
+```bash
+ssl.ldif
+dn: cn=config
+changetype: modify
+add: olcTLSCACertificateFile
+olcTLSCACertificateFile: /etc/ssl/certs/ldap.calpolyieee.com.fullchain.pem
+-
+add: olcTLSCertificateFile
+olcTLSCertificateFile: /etc/ssl/certs/ldap.calpolyieee.com.cert.pem
+-
+add: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: /etc/ssl/private/ldap.calpolyieee.com.privkey.pem
+```
+
+Save and close the file, then apply the changes with ldapmodify:
+
+```bash
+> sudo ldapmodify -H ldapi:// -Y EXTERNAL -f ssl.ldif
+```
+
+```bash
+Output
+SASL/EXTERNAL authentication started
+SASL username: gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth
+SASL SSF: 0
+modifying entry "cn=config"
+```
+
+We don't need to reload `slapd` to load the new certificates, this happened automatically when we updated the config with `ldapmodify`. Run the `ldapwhoami` command one more time, to verify. This time we need to use the proper hostname and add the `-ZZ` option to force a secure connection:
+
+```bash
+> ldapwhoami -H ldap://ldap.calpolyieee.com -x -ZZ
+```
+
+We need the full hostname when using a secure connection because the client will check to make sure that the hostname matches the hostname on the certificate. This prevents man-in-the-middle attacks where an attacker could intercept your connection and impersonate your server.
+
+The `ldapwhoami` command should return `anonymous`, with no errors. We've successfully encrypted our LDAP connection.
+
+## Configuring custom IEEE Attributes and Object Classes
+
+Our IEEE Student branch requires a custom structural object and three custom attributes:
+
+* ieeeMemberNumber
+* ieeeGroups
+* ieeeExpiration
+
+A breif outline of the ieeeUser structural object is shown below (with default values):
+
+```text
+objectDataFor        : IEEE User Data
+
+Alias                : ieeeUser
+OID                  : 1.3.6.1.4.1.52310.108100097112.1
+Description          : IEEE Member Data Object Container for general IEEE User Information
+Superior Classes     : top - (2.5.6.0)
+Class type           : Structural
+Mandatory Attributes : 
+    cn, commonName                - (2.5.4.3)                           = LFirst
+    displayName                   - (2.16.840.1.113730.3.1.241)         = Last, First M.
+    mobile, mobileTelephoneNumber - (0.9.2342.19200300.100.1.41)
+    o, organizationName           - (2.5.4.10)                          = Cal Poly IEEE Student Branch
+    uid, userid                   - (0.9.2342.19200300.100.1.1)
+    sn, surname                   - (2.5.4.4)                           = Last Name
+    ieeeMemberNumber              - (1.3.6.1.4.1.52310.108100097112.2)  = 8 Digits
+    mail, rfc822Mailbox           - (0.9.2342.19200300.100.1.3)
+    ieeeGroups                    - (1.3.6.1.4.1.52310.108100097112.4)  = MinOne(member,officer,admin,service)
+    ieeeExpiration                - (1.3.6.1.4.1.52310.108100097112.3)  = YYYY
+Optional attributes  :
+    description                   - (2.5.4.13)                          = Officer Position
+    userPassword                  - (2.5.4.35)
+```
+
+The following is the `ieee_custom_schema.schema`:
+
+```text
+attributetype ( 1.3.6.1.4.1.52310.108100097112.2 NAME 'ieeeMemberNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27{8}
+    USAGE userApplications )
+attributetype ( 1.3.6.1.4.1.52310.108100097112.3 NAME 'ieeeExpiration'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27{4}
+    USAGE userApplications )
+attributetype ( 1.3.6.1.4.1.52310.108100097112.4 NAME 'ieeeGroups'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
+    USAGE userApplications )
+objectclass ( 1.3.6.1.4.1.52310.108100097112.1 NAME 'ieeeUser'
+    DESC 'IEEE Member Data Object Container for general IEEE User Information'
+    SUP inetOrgPerson
+    STRUCTURAL
+    MUST ( cn $ displayName $ ieeeExpiration $ ieeeGroups $ ieeeMemberNumber $ mail $ mobile $ o $ sn $ uid )
+    MAY ( description $ userPassword ) )
+```
+
+The following guide assumes that you are in the '~' directory.
+
+Before starting, change to your home directory:
+
+```bash
+> cd ~
 ```
