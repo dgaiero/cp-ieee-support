@@ -15,6 +15,7 @@ In this guide:
             * [Updating the Certbot Renewal Cron Job](#updating-the-certbot-renewal-cron-job)
             * [Configuring slapd to Offer Secure Connections](#configuring-slapd-to-offer-secure-connections)
     * [Configuring custom IEEE Attributes and Object Classes](#configuring-custom-ieee-attributes-and-object-classes)
+    * [Credits](#credits)
 
 ## Assumptions
 
@@ -402,3 +403,13 @@ cn={4}ieee_user_object.ldif
 ```
 
 The server is now configured.
+
+
+## Credits
+
+This guide could not be written without the support of the following articles:
+
+* https://www.lisenet.com/2015/convert-openldap-schema-to-ldif/
+* https://www.digitalocean.com/community/tutorials/how-to-secure-apache-with-let-s-encrypt-on-ubuntu-16-04
+* https://www.digitalocean.com/community/tutorials/how-to-encrypt-openldap-connections-using-starttls
+* https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-openldap-and-phpldapadmin-on-ubuntu-16-04
