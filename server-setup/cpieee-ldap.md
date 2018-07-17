@@ -304,7 +304,7 @@ Optional attributes  :
     userPassword                  - (2.5.4.35)
 ```
 
-The following is the `ieee_custom_schema.schema`:
+The following is the `ieee_user_object.schema`:
 
 ```text
 attributetype ( 1.3.6.1.4.1.52310.108100097112.2 NAME 'ieeeMemberNumber'
@@ -324,10 +324,81 @@ objectclass ( 1.3.6.1.4.1.52310.108100097112.1 NAME 'ieeeUser'
     MAY ( description $ userPassword ) )
 ```
 
-The following guide assumes that you are in the '~' directory.
-
-Before starting, change to your home directory:
+Create this file in `/etc/ldap/schema/ieee_user_object.schema`.
 
 ```bash
-> cd ~
+> vim /etc/ldap/schema/ieee_user_object.schema
 ```
+
+Then, insert the text with your preferred method.
+
+The following guide assumes that you are in the `/etc/ldap/ieee` directory.
+
+Before starting, make and change to the directory to store the custom IEEE schema configuration files:
+
+```bash
+> sudo -s & mkdir /etc/ldap/ieee && cd $_
+```
+
+Next, we will create a conversion file:
+
+```bash
+> cat > ./schema_conv.conf << EOL
+include /etc/ldap/schema/ieee_user_object.schema
+EOL
+```
+
+Convert the schema files to LDIF:
+
+```bash
+> mkdir /tmp/ldif
+> slaptest -f ./schema_conv.conf -F /tmp/ldif
+```
+
+Open `/tmp/ldif/cn\=config/cn\=schema/cn\=\{5\}ieee_user_object.ldif` file and change the following lines:
+
+```bash
+dn: cn={5}ieee_user_object
+objectClass: olcSchemaConfig
+cn: {5}ieee_user_object
+```
+to
+
+```bash
+dn: cn=ieee_user_object,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: ieee_user_object
+```
+
+Also, dekete these lines at the bottom:
+
+```bash
+structuralObjectClass: olcSchemaConfig
+entryUUID: d53d1a8c-4261-1034-9085-738a9b3f3783
+creatorsName: cn=config
+createTimestamp: 20150206153742Z
+entryCSN: 20150206153742.072733Z#000000#000#000000
+modifiersName: cn=config
+modifyTimestamp: 20150206153742Z
+```
+
+Copy the files to `/etc/ldap/schema` and insert the new schema to the LDAP tree:
+
+```bash
+> cp ldif/cn\=config/cn\=schema/cn\=\{5\}ieee_user_object.ldif etc/ldap/ieee_user_object.ldif
+> ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/ldap/schema/ieee_user_object.ldif
+```
+
+Verify:
+
+```bash
+> ls -1 /etc/ldap/slapd.d/cn\=config/cn\=schema
+
+cn={0}core.ldif
+cn={1}cosine.ldif
+cn={2}nis.ldif
+cn={3}inetorgperson.ldif
+cn={4}ieee_user_object.ldif
+```
+
+The server is now configured.
