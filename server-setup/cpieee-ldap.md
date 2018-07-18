@@ -56,7 +56,7 @@ Direction|`Ingress`
 Action on match|`Allow`
 Target tags|`ldaps`
 IP ranges|`0.0.0.0/0`
-Protocols and ports|`tcp:689`
+Protocols and ports|`tcp:636, udp:636`
 
 #### Firewall Rule 2
 
@@ -68,7 +68,7 @@ Direction|`Ingress`
 Action on match|`Allow`
 Target tags|`ldap`
 IP ranges|`0.0.0.0/0`
-Protocols and ports|`tcp:389`
+Protocols and ports|`tcp:389, udp:389`
 
 ## Configuring sldap
 
