@@ -1,3 +1,5 @@
+REFERENCE: https://serverfault.com/questions/63916/how-to-disable-anonymous-access-on-ldap
+
 # Setup and Configuration of sldap on cpieee-ldap server
 
 In this guide:
@@ -338,13 +340,16 @@ The following guide assumes that you are in the `/etc/ldap/ieee` directory.
 Before starting, make and change to the directory to store the custom IEEE schema configuration files:
 
 ```bash
-> sudo -s & mkdir /etc/ldap/ieee && cd $_
+> sudo -s && mkdir /etc/ldap/ieee && cd $_
 ```
 
 Next, we will create a conversion file:
 
 ```bash
 > cat > ./schema_conv.conf << EOL
+include /etc/ldap/schema/core.schema
+include /etc/ldap/schema/cosine.schema
+include /etc/ldap/schema/inetorgperson.schema
 include /etc/ldap/schema/ieee_user_object.schema
 EOL
 ```
@@ -356,12 +361,12 @@ Convert the schema files to LDIF:
 > slaptest -f ./schema_conv.conf -F /tmp/ldif
 ```
 
-Open `/tmp/ldif/cn\=config/cn\=schema/cn\=\{5\}ieee_user_object.ldif` file and change the following lines:
+Open `/tmp/ldif/cn\=config/cn\=schema/cn\=\{3\}ieee_user_object.ldif` file and change the following lines:
 
 ```bash
-dn: cn={5}ieee_user_object
+dn: cn={3}ieee_user_object
 objectClass: olcSchemaConfig
-cn: {5}ieee_user_object
+cn: {3}ieee_user_object
 ```
 to
 
@@ -371,22 +376,22 @@ objectClass: olcSchemaConfig
 cn: ieee_user_object
 ```
 
-Also, dekete these lines at the bottom:
+Also, delete these lines at the bottom:
 
 ```bash
 structuralObjectClass: olcSchemaConfig
-entryUUID: d53d1a8c-4261-1034-9085-738a9b3f3783
+entryUUID: e56cba6c-27e0-1038-9896-fd0cdec3fe7d
 creatorsName: cn=config
-createTimestamp: 20150206153742Z
-entryCSN: 20150206153742.072733Z#000000#000#000000
+createTimestamp: 20180730010904Z
+entryCSN: 20180730010904.604732Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20150206153742Z
+modifyTimestamp: 20180730010904Z
 ```
 
 Copy the files to `/etc/ldap/schema` and insert the new schema to the LDAP tree:
 
 ```bash
-> cp ldif/cn\=config/cn\=schema/cn\=\{5\}ieee_user_object.ldif etc/ldap/ieee_user_object.ldif
+> cp /tmp/ldif/cn\=config/cn\=schema/cn\=\{3\}ieee_user_object.ldif /etc/ldap/schema/ieee_user_object.ldif
 > ldapadd -Q -Y EXTERNAL -H ldapi:/// -f /etc/ldap/schema/ieee_user_object.ldif
 ```
 
