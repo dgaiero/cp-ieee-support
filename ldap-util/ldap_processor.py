@@ -88,17 +88,18 @@ class ProcessUsers:
                     f"{temp_user_information['First Name']}.{temp_user_information['Last Name']}".lower())
                 user['ieeeMemberNumber'].append(int(
                     temp_user_information['Member/Customer Number']))
+                # user['status'] = temp_user_information['IEEE Status']
                 if temp_user_information['Renew Year'] == '':
                     temp_user_information['Renew Year'] = 0000
                 user['ieeeExpiration'].append(int(
                     temp_user_information['Renew Year']))
                 user['userStatus'].append(temp_user_information['IEEE Status'])
-                work_number = re.sub(
+                school_number = re.sub(
                     r"\D", "", temp_user_information['Work Number '])
                 home_number = re.sub(
                     r"\D", "", temp_user_information['Home Number '])
-                user['mobile'] = set_phone_number(work_number, home_number)
-                userDN = f"mail={user['mail'][0]},dc=members,dc=calpolyieee,dc=com"
+                user['mobile'] = set_phone_number(school_number, home_number)
+                userDN = f"ieeeMemberNumber={user['ieeeMemberNumber'][0]},dc=members,dc=calpolyieee,dc=com"
                 logger.info(f"CSV USER dn IS {userDN}")
                 users_in_csv[userDN] = user
         return users_in_csv
@@ -160,14 +161,16 @@ class ProcessUsers:
                 ldap_user_add_response = self.ldap_connection.add(dn, attributes={'objectClass': ['ieeeUser', 'inetOrgPerson', 'organizationalPerson', 'person', 'top'],
                                                                                   'displayName': _attributes['displayName'],
                                                                                   'cn': _attributes['cn'],
-                                                                                  #  'mail': _attributes['mail'],
+                                                                                  'mail': _attributes['mail'],
                                                                                   'o': ['Cal Poly IEEE Student Branch'],
                                                                                   'givenName': _attributes['givenName'],
                                                                                   'sn': _attributes['sn'],
                                                                                   'uid': _attributes['uid'],
                                                                                   'member': _attributes['member'],
+                                                                                #   'ieeeMemberNumber': _attributes['ieeeMemberNumber']
                                                                                   })
                 logger.info(f"LDAP ADD RESPONSE {ldap_user_add_response}")
+                logger.info(f"LDAP ADD EXTENDED INFORMATION {self.ldap_connection.result}")
                 self.ldap_connection.modify(
                     dn, {'mobile': [(ldap3.MODIFY_ADD, _attributes['mobile'])]})
                 logger.info(f"COMMAND MODIFY_ADD mobile")
@@ -176,10 +179,10 @@ class ProcessUsers:
                     dn, {'ieeeExpiration': [(ldap3.MODIFY_ADD, _attributes['ieeeExpiration'])]})
                 logger.info(f"COMMAND MODIFY_ADD ieeeExpiration")
                 logger.info(f"RESULT {self.ldap_connection.result}")
-                self.ldap_connection.modify(
-                    dn, {'ieeeMemberNumber': [(ldap3.MODIFY_ADD, _attributes['ieeeMemberNumber'])]})
-                logger.info(f"COMMAND MODIFY_ADD ieeeMemberNumber")
-                logger.info(f"RESULT {self.ldap_connection.result}")
+                # self.ldap_connection.modify(
+                #     dn, {'ieeeMemberNumber': [(ldap3.MODIFY_ADD, _attributes['ieeeMemberNumber'])]})
+                # logger.info(f"COMMAND MODIFY_ADD ieeeMemberNumber")
+                # logger.info(f"RESULT {self.ldap_connection.result}")
 
     def set_user_expire(self, dn, new_expire_date):
         '''
@@ -199,6 +202,12 @@ class ProcessUsers:
             dn, {'member': [(ldap3.MODIFY_DELETE, ['cn=activeMembers,dc=calpolyieee,dc=com'])]})
         logger.info(f"COMMAND MODIFY_DELETE cn=activeMembers")
         logger.info(f"RESULT {self.ldap_connection.result}")
+
+        self.ldap_connection.modify(
+            dn, {'member': [(ldap3.MODIFY_DELETE, ['cn=applicantMembers,dc=calpolyieee,dc=com'])]})
+        logger.info(f"COMMAND MODIFY_DELETE cn=applicantMembers")
+        logger.info(f"RESULT {self.ldap_connection.result}")
+
         self.ldap_connection.modify(
             dn, {'ieeeExpiration': [(ldap3.MODIFY_REPLACE, [new_expire_date])]})
         logger.info(
@@ -222,6 +231,10 @@ class ProcessUsers:
         self.ldap_connection.modify(
             dn, {'member': [(ldap3.MODIFY_DELETE, ['cn=arrearsMembers,dc=calpolyieee,dc=com'])]})
         logger.info(f"COMMAND MODIFY_DELETE cn=arrearsMembers")
+        logger.info(f"RESULT {self.ldap_connection.result}")
+        self.ldap_connection.modify(
+            dn, {'member': [(ldap3.MODIFY_DELETE, ['cn=applicantMembers,dc=calpolyieee,dc=com'])]})
+        logger.info(f"COMMAND MODIFY_DELETE cn=applicantMembers")
         logger.info(f"RESULT {self.ldap_connection.result}")
         self.ldap_connection.modify(
             dn, {'ieeeExpiration': [(ldap3.MODIFY_REPLACE, [new_expire_date])]})
@@ -248,22 +261,54 @@ class ProcessUsers:
         logger.info(f"COMMAND MODIFY_DELETE cn=activeMembers")
         logger.info(f"RESULT {self.ldap_connection.result}")
         self.ldap_connection.modify(
+            dn, {'member': [(ldap3.MODIFY_DELETE, ['cn=applicantMembers,dc=calpolyieee,dc=com'])]})
+        logger.info(f"COMMAND MODIFY_DELETE cn=applicantMembers")
+        logger.info(f"RESULT {self.ldap_connection.result}")
+        self.ldap_connection.modify(
+            dn, {'ieeeExpiration': [(ldap3.MODIFY_REPLACE, [new_expire_date])]})
+        logger.info(
+            f"COMMAND MODIFY_REPLACE ieeeExpiration {new_expire_date}")
+        logger.info(f"RESULT {self.ldap_connection.result}")
+
+    def set_user_applicant(self, dn, new_expire_date):
+        '''
+        Set the user to arrears by modifying member attribute.
+        '''
+        logger.info("PERFORMING WRITE OPERATION ON LDAP SERVER")
+        logger.info("COMMAND ARREARS USER")
+        self.ldap_connection.modify(
+            dn, {'member': [(ldap3.MODIFY_DELETE, ['cn=arrearsMembers,dc=calpolyieee,dc=com'])]})
+        logger.info(f"COMMAND MODIFY_DELETE cn=arrearsMembers")
+        logger.info(f"RESULT {self.ldap_connection.result}")
+        self.ldap_connection.modify(dn, {'member': [(
+            ldap3.MODIFY_DELETE, ['cn=inactiveMembers,dc=calpolyieee,dc=com'])]})
+        logger.info(f"COMMAND MODIFY_DELETE cn=inactiveMembers")
+        logger.info(f"RESULT {self.ldap_connection.result}")
+        self.ldap_connection.modify(
+            dn, {'member': [(ldap3.MODIFY_DELETE, ['cn=activeMembers,dc=calpolyieee,dc=com'])]})
+        logger.info(f"COMMAND MODIFY_DELETE cn=activeMembers")
+        logger.info(f"RESULT {self.ldap_connection.result}")
+        self.ldap_connection.modify(
+            dn, {'member': [(ldap3.MODIFY_ADD, ['cn=applicantMembers,dc=calpolyieee,dc=com'])]})
+        logger.info(f"COMMAND MODIFY_ADD cn=applicantMembers")
+        logger.info(f"RESULT {self.ldap_connection.result}")
+        self.ldap_connection.modify(
             dn, {'ieeeExpiration': [(ldap3.MODIFY_REPLACE, [new_expire_date])]})
         logger.info(
             f"COMMAND MODIFY_REPLACE ieeeExpiration {new_expire_date}")
         logger.info(f"RESULT {self.ldap_connection.result}")
 
 
-def set_phone_number(work_number, home_number):
+def set_phone_number(school_number, home_number):
     '''
     Set the phone number for a user. 
     '''
     logger.debug(
-        f"SETTING PHONE NUMBER: WORK IS {work_number} HOME IS {home_number}")
+        f"SETTING PHONE NUMBER: WORK IS {school_number} HOME IS {home_number}")
     try:
-        if len(work_number) <= 11 or len(str(work_number)) >= 10:
-            logger.debug(f"SET USER PHONE NUMBER TO {work_number}")
-            return [int(work_number)]
+        if len(school_number) <= 11 or len(str(school_number)) >= 10:
+            logger.debug(f"SET USER PHONE NUMBER TO {school_number}")
+            return [int(school_number)]
     except ValueError:
         pass
     try:

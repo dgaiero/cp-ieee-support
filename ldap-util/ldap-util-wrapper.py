@@ -38,7 +38,7 @@ def process_custom_csv(server_uri, search_base, search_filter, bind_user, bind_p
 
 
 @click.command()
-@click.option('--server_uri', default='ldap://ldap.calpolyieee.com', help='The URI of the IEEE LDAP server')
+@click.option('--server_uri', default='ldaps://ldap.calpolyieee.com', help='The URI of the IEEE LDAP server')
 @click.option('--search_base', default='dc=members,dc=calpolyieee,dc=com', help='The search base for the queries.')
 @click.option('--search_filter', default='(objectClass=ieeeUser)', help='The search filter for what users to find.')
 @click.argument('bind_user')
@@ -72,9 +72,11 @@ def main(server_uri, search_base, search_filter, bind_user, bind_password, csv_l
     if run_method == 'custom':
         process_custom_csv(server_uri, search_base, search_filter,
                            bind_user, bind_password, csv_location)
+        logger.info("DONE")
     elif run_method == 'ieee':
         process_default_ieee_csv(
             server_uri, search_base, search_filter, bind_user, bind_password, csv_location)
+        logger.info("DONE")
 
 
 if __name__ == "__main__":
@@ -100,6 +102,7 @@ if __name__ == "__main__":
     logger.addHandler(fh)
     logger.addHandler(ch)
 
+    # main()
     try:
         main()
     except (SystemExit, KeyboardInterrupt):
