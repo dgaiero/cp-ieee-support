@@ -2,12 +2,11 @@ import msvcrt
 import os
 import re
 import ssl
-import secret
+import secrets
 import sys
 import threading
 import time
 import traceback
-import keyring
 from contextlib import redirect_stdout
 from getpass import getpass
 from io import StringIO

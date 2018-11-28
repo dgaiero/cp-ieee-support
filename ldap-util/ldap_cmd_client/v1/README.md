@@ -3,6 +3,6 @@ To create standalone exe:
 Change location to pyfiglet
 
 To setup on new computer:
-1.`cp secret_template.py secret.py`
+1.`cp secrets_template.py secrets.py`
 2. Fill in server parameters.
 3. Run secret.py to configure credentials in credential manager.
