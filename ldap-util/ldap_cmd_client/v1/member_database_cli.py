@@ -1,8 +1,8 @@
 import msvcrt
 import os
 import re
+import secrets as secret
 import ssl
-import secrets
 import sys
 import threading
 import time
