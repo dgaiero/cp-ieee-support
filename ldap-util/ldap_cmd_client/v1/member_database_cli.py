@@ -1,7 +1,6 @@
 import msvcrt
 import os
 import re
-import secrets as secret
 import ssl
 import sys
 import threading
@@ -16,6 +15,8 @@ from ansi2html import Ansi2HTMLConverter
 from colorama import Back, Fore, Style
 from colorama import init as coloramaInit
 from pyfiglet import Figlet
+
+import config_params as secret
 
 
 class TimeoutExpired(Exception):
